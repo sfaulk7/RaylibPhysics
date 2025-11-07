@@ -15,9 +15,6 @@ int main(void)
 	{
 		App->Init();
 
-		
-		
-
 		while (!App->ShouldClose())
 		{
 			//Toggles Gravity

@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 //#include <glm/gtx/norm.hpp>
 #include "raylib.h"
+#include "raymath.h"
 #include "Shapes.h"
 #include "EnumUtils.h"
 #include "World.h"
@@ -37,6 +38,8 @@ void World::Init()
     ColMap[ShapeType::CIRCLE | ShapeType::AABB]   = CheckCircleAABB;
 
     DepenMap[ShapeType::CIRCLE | ShapeType::CIRCLE] = DepenetrateCircleCircle;
+    DepenMap[ShapeType::AABB | ShapeType::AABB] = DepenetrateAABBAABB;
+    DepenMap[ShapeType::CIRCLE | ShapeType::AABB] = DepenetrateCircleAABB;
 
     ////Makes a starter circle object and adds it to the Objects array
     //std::shared_ptr<PhysObject> NewCirclePhysObject = std::make_shared<PhysObject>();
@@ -97,10 +100,15 @@ void World::TickFixed()
                     //... let them free
                     Objecti->pickedUp = false;
                     Objectj->pickedUp = false;
+                    mouseHasAnObject = false;
+
                     if (mouseScaling == false)
                     {
-                        Objecti->SetHasGravity(true);
-                        Objectj->SetHasGravity(true);
+                        if (gravityEnabled == true)
+                        {
+                            Objecti->SetHasGravity(true);
+                            Objectj->SetHasGravity(true);
+                        }
                     }
                 }
                 //... and the mouse is still picking up
@@ -145,8 +153,11 @@ void World::TickFixed()
                     Objectj->beingScaled = false;
                     if (mousePickingUp == false)
                     {
-                        Objecti->SetHasGravity(true);
-                        Objectj->SetHasGravity(true);
+                        if (gravityEnabled == true)
+                        {
+                            Objecti->SetHasGravity(true);
+                            Objectj->SetHasGravity(true);
+                        }
                     }
                 }
                 //... and the mouse is still scaling
@@ -191,6 +202,8 @@ void World::TickFixed()
             }
 
             ShapeType ColKey = Objecti->ColliderShape.Type | Objectj->ColliderShape.Type;
+            ShapeType PairType = Objecti->ColliderShape.Type | Objectj->ColliderShape.Type;
+
             auto KeyPair = ColMap.find(ColKey);
 
             bool HasFunc = KeyPair != ColMap.end();
@@ -209,24 +222,28 @@ void World::TickFixed()
 
                 if (IsColliding == true)
                 {
-                    
-
                     //If either object is the mouse
                     if (Objecti == MouseHitbox || Objectj == MouseHitbox)
                     {
                         //... and the mouse is picking up
                         if (mousePickingUp == true)
                         {
-                            //... pick up the other object
-                            if (Objecti == MouseHitbox)
+                            //... and the mouse does not currently have an object
+                            if (mouseHasAnObject == false)
                             {
-                                Objectj->pickedUp = true;
-                                Objectj->SetHasGravity(false);
-                            }
-                            else if (Objectj == MouseHitbox)
-                            {
-                                Objecti->pickedUp = true;
-                                Objecti->SetHasGravity(false);
+                                //... pick up the other object
+                                if (Objecti == MouseHitbox)
+                                {
+                                    Objectj->pickedUp = true;
+                                    mouseHasAnObject = true;
+                                    Objectj->SetHasGravity(false);
+                                }
+                                else if (Objectj == MouseHitbox)
+                                {
+                                    Objecti->pickedUp = true;
+                                    mouseHasAnObject = true;
+                                    Objecti->SetHasGravity(false);
+                                }
                             }
                         }
                         //... and the mouse is scaling
@@ -249,7 +266,28 @@ void World::TickFixed()
                     }
                     else
                     {
-                        std::cout << " Collision: " << debugCollisionCounter << std::endl;
+                        //if both objects are being picked up ignore collision
+                        if (Objecti->pickedUp && Objectj->pickedUp)
+                        {
+
+                        }
+                        else
+                        {
+                            // Pen will be assigned a value by the depenetration func below, but it's
+                            // good to have a default nonetheless
+                            float Pen = 0.0f;
+
+                            glm::vec2 Normal = DepenMap[PairType](Objecti->Position, Objecti->ColliderShape,
+                                Objectj->Position, Objectj->ColliderShape, Pen);
+
+                            Objecti->ResolvePhysObjects(*Objecti,   // first object
+                                                        *Objectj,   // second object
+                                                        1.0f,       // elasticity - hard-coded to 1 for now (could be configurable in World)
+                                                        Normal,     // collision normal
+                                                        Pen);       // penetration depth
+                        }
+
+                        //std::cout << " Collision: " << debugCollisionCounter << std::endl;
                         debugCollisionCounter++;
                     }
                 }
@@ -363,6 +401,7 @@ void World::MakeNewObject(int type)
     case 1:
     {
         std::shared_ptr<PhysObject> NewPhysObject = std::make_shared<PhysObject>();
+        NewPhysObject->SetHasGravity(gravityEnabled);
         glm::vec2 MousePosition;
         MousePosition.x = GetMousePosition().x;
         MousePosition.y = GetMousePosition().y;
@@ -377,6 +416,7 @@ void World::MakeNewObject(int type)
 
         std::shared_ptr<PhysObject> NewCIRCLEPhysObject = std::make_shared<PhysObject>();
         NewCIRCLEPhysObject->ColliderShape.Type = ShapeType::CIRCLE;
+        NewCIRCLEPhysObject->SetHasGravity(gravityEnabled);
         glm::vec2 MousePosition;
         MousePosition.x = GetMousePosition().x;
         MousePosition.y = GetMousePosition().y;
@@ -392,6 +432,7 @@ void World::MakeNewObject(int type)
         std::shared_ptr<PhysObject> NewAABBPhysObject = std::make_shared<PhysObject>();
         NewAABBPhysObject->ColliderShape.Type = ShapeType::AABB;
         NewAABBPhysObject->ColliderShape.AABBData.HalfExtents = glm::vec2(10, 10);
+        NewAABBPhysObject->SetHasGravity(gravityEnabled);
         glm::vec2 MousePosition;
         MousePosition.x = GetMousePosition().x;
         MousePosition.y = GetMousePosition().y;
@@ -425,6 +466,7 @@ void World::AddObjectToObjects(std::shared_ptr<PhysObject> ObjectToAdd)
 
 void World::DisableAllGravity(bool keepMomentum)
 {
+    gravityEnabled = false;
     for (auto Objecti : Objects)
     {
         Objecti->SetHasGravity(false);
@@ -437,6 +479,7 @@ void World::DisableAllGravity(bool keepMomentum)
 
 void World::EnableAllGravity(bool keepMomentum)
 {
+    gravityEnabled = true;
     for (auto Objecti : Objects)
     {
         Objecti->SetHasGravity(true);

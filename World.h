@@ -27,7 +27,9 @@ public:
 	bool ShouldTickFixed() const;
 
 	float TargetFixedStep;
+	bool gravityEnabled = true;
 	bool mousePickingUp = false;
+	bool mouseHasAnObject = false;
 	bool mouseScaling = false;
 	int debugCollisionCounter = 0;
 
