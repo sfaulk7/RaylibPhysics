@@ -11,7 +11,8 @@ PhysObject::PhysObject() :
 	Gravity({ 0, Mass * 0.1f }),
 	hasGravity(true),
 	ColliderShape({ShapeType::NONE}),
-	isStatic(false)
+	isStatic(false),
+	isCollidable(true)
 {
 }
 
@@ -21,19 +22,21 @@ void PhysObject::TickPhys(float Delta)
 	// SO MOVING UPWARD IS ACTUALLY NEGATIVE AND MOVING DOWNWARD IS POSITIVE
 	// SO PRETTY MUCH JUST INVERSE THE Y-AXIS VALUES
 
-	//Moves position based on velocity in steps
-	int steps = 10; // Number of interpolation steps
-	for (int i = 0; i < steps; i++)
+	if (isStatic == false || pickedUp == true)
 	{
-		//Smooth interpolation (similar to arrive)
-		//glm::vec2 step = { Velocity.x * Delta / steps, Velocity.y * Delta / steps };
-		
-		//Fast interpolation
-		glm::vec2 step = { Velocity.x / steps, Velocity.y / steps };
+		//Moves position based on velocity in steps
+		int steps = 10; // Number of interpolation steps
+		for (int i = 0; i < steps; i++)
+		{
+			//Smooth interpolation (similar to arrive)
+			//glm::vec2 step = { Velocity.x * Delta / steps, Velocity.y * Delta / steps };
 
-		Position = { Position.x + step.x, Position.y + step.y };
+			//Fast interpolation
+			glm::vec2 step = { Velocity.x / steps, Velocity.y / steps };
+
+			Position = { Position.x + step.x, Position.y + step.y };
+		}
 	}
-	//Position += Velocity;
 
 
 	Velocity = Velocity + (Drag + -(Velocity * 0.01f));
@@ -124,21 +127,50 @@ void PhysObject::ResolvePhysObjects(PhysObject& Lhs, PhysObject& Rhs, float Elas
 
 	// depenetrate objects 
 	glm::vec2 Mtv = Normal * Pen;
-	Lhs.Position -= Mtv;
-	Rhs.Position += Mtv;
-
-	// TODO: don't bother applying impulses to static/kinematic objects
+	if (Lhs.isStatic == false)
+	{
+		Lhs.Position -= Mtv;
+	}
+	if (Rhs.isStatic == false)
+	{
+		Rhs.Position += Mtv;
+	}
 
 	// apply impulses to update velocity after collision
 	// remember: apply an equal but opposite force to the other
 	glm::vec2 Impulse = Normal * ImpulseMag;
-	Lhs.AddImpulse(-Impulse);
-	Rhs.AddImpulse(Impulse);
+	if (Lhs.isStatic == false)
+	{
+		Lhs.AddImpulse(-Impulse);
+	}
+	if (Rhs.isStatic == false)
+	{
+		Rhs.AddImpulse(Impulse);
+	}
+
+	//// depenetrate objects 
+	//glm::vec2 Mtv = Normal * Pen;
+	//Lhs.Position -= Mtv;
+	//Rhs.Position += Mtv;
+
+	//// apply impulses to update velocity after collision
+	//// remember: apply an equal but opposite force to the other
+	//glm::vec2 Impulse = Normal * ImpulseMag;
+	//Lhs.AddImpulse(-Impulse);
+	//Rhs.AddImpulse(Impulse);
 }
 
 void PhysObject::SetHasGravity(bool newValue)
 {
 	hasGravity = newValue;
+}
+void PhysObject::SetIsStatic(bool newValue)
+{
+	isStatic = newValue;
+}
+void PhysObject::SetIsCollidable(bool newValue)
+{
+	isCollidable = newValue;
 }
 
 void PhysObject::Draw() const
@@ -146,23 +178,46 @@ void PhysObject::Draw() const
 	switch (ColliderShape.Type)
 	{
 		case ShapeType::NONE:
-			// here's a freebie: we'll just draw shapeless colliders as a point
-			DrawPixel(Position.x, Position.y, RAYWHITE);
+			if (isStatic == true)
+			{
+				DrawPixel(Position.x, Position.y, RAYWHITE);
+			}
+			else
+			{
+				DrawPixel(Position.x, Position.y, GREEN);
+			}
 			break;
 		case ShapeType::CIRCLE:
-			// TODO: draw circle
-			DrawCircleLines(Position.x, Position.y,
-				ColliderShape.CircleData.Radius,
-				BLUE);
+			if (isStatic == true)
+			{
+				DrawCircleLines(Position.x, Position.y,
+					ColliderShape.CircleData.Radius,
+					RAYWHITE);
+			}
+			else 
+			{
+				DrawCircleLines(Position.x, Position.y,
+					ColliderShape.CircleData.Radius,
+					BLUE);
+			}
 			break;
 		case ShapeType::AABB:
-			// TODO: draw AABB
 			// AABBs or Rectangles ALWAYS draw from the top left in raylib not the center
 			// So we put its position to be offset by the HalfExtents of the width and height to make the center of the rectangle to be the actual point
-			DrawRectangleLines(Position.x - (ColliderShape.AABBData.HalfExtents.x),
-				Position.y - (ColliderShape.AABBData.HalfExtents.y),
-				ColliderShape.AABBData.HalfExtents.x * 2.0f, ColliderShape.AABBData.HalfExtents.y * 2.0f,
-				RED);
+			if (isStatic == true)
+			{
+				DrawRectangleLines(Position.x - (ColliderShape.AABBData.HalfExtents.x),
+					Position.y - (ColliderShape.AABBData.HalfExtents.y),
+					ColliderShape.AABBData.HalfExtents.x * 2.0f, ColliderShape.AABBData.HalfExtents.y * 2.0f,
+					RAYWHITE);
+			}
+			else
+			{
+				DrawRectangleLines(Position.x - (ColliderShape.AABBData.HalfExtents.x),
+					Position.y - (ColliderShape.AABBData.HalfExtents.y),
+					ColliderShape.AABBData.HalfExtents.x * 2.0f, ColliderShape.AABBData.HalfExtents.y * 2.0f,
+					RED);
+			}
 			break;
 		default:
 			break;

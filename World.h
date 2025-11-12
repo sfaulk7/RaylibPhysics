@@ -34,7 +34,7 @@ public:
 	int debugCollisionCounter = 0;
 
 	//The Type is either 1: NONE, 2: CIRCLE, or 3: AABB
-	void MakeNewObject(int type);
+	void MakeNewObject(int type, bool isCollidable, bool isStatic);
 	void AddObjectToObjects(std::shared_ptr<PhysObject> ObjectToAdd);
 	void DisableAllGravity(bool keepMomentum);
 	void EnableAllGravity(bool keepMomentum);

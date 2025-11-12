@@ -88,8 +88,12 @@ void World::TickFixed()
     {
         for (auto Objectj : Objects)
         {
+            //Pass on if the objects are the same exact object,...
             if (Objecti == Objectj) { continue; }
+            // ...either object is none,
             if (Objecti->ColliderShape.Type == ShapeType::NONE || Objectj->ColliderShape.Type == ShapeType::NONE) { continue; }
+            // ...or either object is not collidable
+            if (Objecti->isCollidable == false || Objectj->isCollidable == false) { continue; }
 
             //If either object is pickedUp
             if (Objecti->pickedUp == true || Objectj->pickedUp == true)
@@ -236,6 +240,7 @@ void World::TickFixed()
                                 {
                                     Objectj->pickedUp = true;
                                     mouseHasAnObject = true;
+                                    Objectj->SetHasGravity(false);
                                     Objectj->SetHasGravity(false);
                                 }
                                 else if (Objectj == MouseHitbox)
@@ -392,8 +397,7 @@ bool World::ShouldTickFixed() const
 }
 
 //The Type is either 1: NONE, 2: CIRCLE, or 3: AABB
-//There is an additonal "type" of 4: AABB but it has no gravity and is wider so it just acts like a platform
-void World::MakeNewObject(int type)
+void World::MakeNewObject(int type, bool isCollidable, bool isStatic)
 {
     switch (type)
     {
@@ -401,6 +405,8 @@ void World::MakeNewObject(int type)
     case 1:
     {
         std::shared_ptr<PhysObject> NewPhysObject = std::make_shared<PhysObject>();
+        NewPhysObject->SetIsCollidable(isCollidable);
+        NewPhysObject->SetIsStatic(isStatic);
         NewPhysObject->SetHasGravity(gravityEnabled);
         glm::vec2 MousePosition;
         MousePosition.x = GetMousePosition().x;
@@ -416,6 +422,8 @@ void World::MakeNewObject(int type)
 
         std::shared_ptr<PhysObject> NewCIRCLEPhysObject = std::make_shared<PhysObject>();
         NewCIRCLEPhysObject->ColliderShape.Type = ShapeType::CIRCLE;
+        NewCIRCLEPhysObject->SetIsCollidable(isCollidable);
+        NewCIRCLEPhysObject->SetIsStatic(isStatic);
         NewCIRCLEPhysObject->SetHasGravity(gravityEnabled);
         glm::vec2 MousePosition;
         MousePosition.x = GetMousePosition().x;
@@ -432,23 +440,9 @@ void World::MakeNewObject(int type)
         std::shared_ptr<PhysObject> NewAABBPhysObject = std::make_shared<PhysObject>();
         NewAABBPhysObject->ColliderShape.Type = ShapeType::AABB;
         NewAABBPhysObject->ColliderShape.AABBData.HalfExtents = glm::vec2(10, 10);
+        NewAABBPhysObject->SetIsCollidable(isCollidable);
+        NewAABBPhysObject->SetIsStatic(isStatic);
         NewAABBPhysObject->SetHasGravity(gravityEnabled);
-        glm::vec2 MousePosition;
-        MousePosition.x = GetMousePosition().x;
-        MousePosition.y = GetMousePosition().y;
-        NewAABBPhysObject->Position = MousePosition;
-        AddObjectToObjects(NewAABBPhysObject);
-        break;
-    }
-
-    //PLATFORM
-    case 4:
-    {
-
-        std::shared_ptr<PhysObject> NewAABBPhysObject = std::make_shared<PhysObject>();
-        NewAABBPhysObject->ColliderShape.Type = ShapeType::AABB;
-        NewAABBPhysObject->ColliderShape.AABBData.HalfExtents = glm::vec2(50, 10);
-        NewAABBPhysObject->SetHasGravity(false);
         glm::vec2 MousePosition;
         MousePosition.x = GetMousePosition().x;
         MousePosition.y = GetMousePosition().y;

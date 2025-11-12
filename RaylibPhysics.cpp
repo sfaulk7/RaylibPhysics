@@ -10,6 +10,8 @@ int main(void)
 
 	bool usingDemoApp = false;
 	bool toggle = false;
+	bool spawningCollidable = true;
+	bool spawningStatic = false;
 
 	if (usingDemoApp == false)
 	{
@@ -39,24 +41,29 @@ int main(void)
 			}
 
 			//Makes a NONE/Pixel object
-			if (IsKeyPressed(KEY_R))
+			if (IsKeyPressed(KEY_E))
 			{
-				App->MakeNewObject(1);
+				App->MakeNewObject(1, spawningCollidable, spawningStatic);
 			}
 			//Makes a CIRCLE object
 			else if (IsKeyPressed(KEY_Q))
 			{
-				App->MakeNewObject(2);
+				App->MakeNewObject(2, spawningCollidable, spawningStatic);
 			}
 			//Makes an AABB/Rectangle Object
-			else if (IsKeyPressed(KEY_E))
+			else if (IsKeyPressed(KEY_W))
 			{ 
-				App->MakeNewObject(3);
+				App->MakeNewObject(3, spawningCollidable, spawningStatic);
 			}
-			//Makes an AABB/Platform object unaffected by gravity
+			//Swaps between spawning collidable and not
+			else if (IsKeyPressed(KEY_C))
+			{
+				spawningCollidable = !spawningCollidable;
+			}
+			//Swaps between spawning static and not
 			else if (IsKeyPressed(KEY_SPACE))
 			{
-				App->MakeNewObject(4);
+				spawningStatic = !spawningStatic;
 			}
 			//Attempt to pick up an object while left click is held
 			if (IsMouseButtonDown(0))

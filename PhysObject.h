@@ -18,6 +18,7 @@ public:
 	glm::vec2 Gravity;
 	bool hasGravity;
 	bool isStatic;
+	bool isCollidable;
 
 	Shape ColliderShape;
 
@@ -40,6 +41,8 @@ public:
 	void ResolvePhysObjects(PhysObject& Lhs, PhysObject& Rhs, float Elasticity, const glm::vec2& Normal, float Pen);
 
 	void SetHasGravity(bool newValue);
+	void SetIsCollidable(bool newValue);
+	void SetIsStatic(bool newValue);
 
 	void Draw() const;
 };
