@@ -86,124 +86,98 @@ void World::TickFixed()
 
     for (auto Objecti : Objects)
     {
+        //If the object is picked up
+        if (Objecti->pickedUp == true)
+        {
+            //... but mouse is not picking up
+            if (mousePickingUp == false)
+            {
+                //... let them free
+                Objecti->pickedUp = false;
+                mouseHasAnObject = false;
+
+                if (mouseScaling == false)
+                {
+                    if (gravityEnabled == true)
+                    {
+                        if (Objecti->isStatic == false)
+                        {
+                            Objecti->SetHasGravity(true);
+                        }
+                    }
+                }
+            }
+            //... and the mouse is still picking up
+            if (mousePickingUp == true)
+            {
+                //... set the one that is being picked up to the mouse position if scaling isnt currently happening
+                if (Objecti->pickedUp == true)
+                {
+                    Objecti->SetHasGravity(false);
+
+                    if (mouseScaling == false)
+                    {
+                        float distance = glm::distance(MouseHitbox->Position, Objecti->Position);
+                        glm::vec2 direction = MouseHitbox->Position - Objecti->Position;
+                        glm::normalize(direction);
+                        Objecti->Velocity = direction;
+                    }
+                }
+            }
+        }
+
+        //If the object is being scaled
+        if (Objecti->beingScaled == true)
+        {
+            //... but mouse is no longer scaling
+            if (mouseScaling == false)
+            {
+                //... let them free
+                Objecti->beingScaled = false;
+                if (mousePickingUp == false)
+                {
+                    if (gravityEnabled == true)
+                    {
+                        if (Objecti->isStatic == false)
+                        {
+                            Objecti->SetHasGravity(true);
+                        }
+                    }
+                }
+            }
+            //... and the mouse is still scaling
+            if (mouseScaling == true)
+            {
+                //... set the one that is being picked up to the mouse position if scaling isnt currently happening
+                if (Objecti->beingScaled == true)
+                {
+                    Objecti->SetHasGravity(false);
+                    Objecti->Velocity = glm::vec2(0, 0);
+
+                    if (Objecti->ColliderShape.Type == ShapeType::CIRCLE)
+                    {
+                        float distance = glm::distance(MouseHitbox->Position, Objecti->Position);
+                        Objecti->ColliderShape.CircleData.Radius = distance;
+                    }
+                    if (Objecti->ColliderShape.Type == ShapeType::AABB)
+                    {
+                        Objecti->ColliderShape.AABBData.HalfExtents = glm::vec2(
+                            (MouseHitbox->Position.x - Objecti->Position.x),
+                            (MouseHitbox->Position.y - Objecti->Position.y));
+                    }
+                }
+            }
+        }
+
+        //Collision checks
         for (auto Objectj : Objects)
         {
-            //Pass on if the objects are the same exact object,...
+            //Pass on if the objects are the same exact object,
             if (Objecti == Objectj) { continue; }
             // ...either object is none,
             if (Objecti->ColliderShape.Type == ShapeType::NONE || Objectj->ColliderShape.Type == ShapeType::NONE) { continue; }
             // ...or either object is not collidable
             if (Objecti->isCollidable == false || Objectj->isCollidable == false) { continue; }
-
-            //If either object is pickedUp
-            if (Objecti->pickedUp == true || Objectj->pickedUp == true)
-            {
-                //... but mouse is not picking up
-                if (mousePickingUp == false)
-                {
-                    //... let them free
-                    Objecti->pickedUp = false;
-                    Objectj->pickedUp = false;
-                    mouseHasAnObject = false;
-
-                    if (mouseScaling == false)
-                    {
-                        if (gravityEnabled == true)
-                        {
-                            Objecti->SetHasGravity(true);
-                            Objectj->SetHasGravity(true);
-                        }
-                    }
-                }
-                //... and the mouse is still picking up
-                if (mousePickingUp == true)
-                {
-                    //... set the one that is being picked up to the mouse position if scaling isnt currently happening
-                    if (Objecti->pickedUp == true)
-                    {
-                        Objecti->SetHasGravity(false);
-
-                        if (mouseScaling == false)
-                        {
-                            float distance = glm::distance(MouseHitbox->Position, Objecti->Position);
-                            glm::vec2 direction = MouseHitbox->Position - Objecti->Position;
-                            glm::normalize(direction);
-                            Objecti->Velocity = direction;
-                        }
-                    }
-                    if (Objectj->pickedUp == true)
-                    {
-                        Objectj->SetHasGravity(false);
-
-                        if (mouseScaling == false)
-                        {
-                            float distance = glm::distance(MouseHitbox->Position, Objectj->Position);
-                            glm::vec2 direction = MouseHitbox->Position - Objectj->Position;
-                            glm::normalize(direction);
-                            Objectj->Velocity = direction;
-                        }
-                        
-                    }
-                }
-            }
-            //If either object is being scaled
-            if (Objecti->beingScaled == true || Objectj->beingScaled == true)
-            {
-                //... but mouse is no longer scaling
-                if (mouseScaling == false)
-                {
-                    //... let them free
-                    Objecti->beingScaled = false;
-                    Objectj->beingScaled = false;
-                    if (mousePickingUp == false)
-                    {
-                        if (gravityEnabled == true)
-                        {
-                            Objecti->SetHasGravity(true);
-                            Objectj->SetHasGravity(true);
-                        }
-                    }
-                }
-                //... and the mouse is still scaling
-                if (mouseScaling == true)
-                {
-                    //... set the one that is being picked up to the mouse position if scaling isnt currently happening
-                    if (Objecti->beingScaled == true)
-                    {
-                        Objecti->SetHasGravity(false);
-                        Objecti->Velocity = glm::vec2(0, 0);
-
-                        if (Objecti->ColliderShape.Type == ShapeType::CIRCLE)
-                        {
-                            float distance = glm::distance(MouseHitbox->Position, Objecti->Position);
-                            Objecti->ColliderShape.CircleData.Radius = distance;
-                        }
-                        if (Objecti->ColliderShape.Type == ShapeType::AABB)
-                        {
-                            Objecti->ColliderShape.AABBData.HalfExtents = glm::vec2(
-                                (MouseHitbox->Position.x - Objecti->Position.x),
-                                (MouseHitbox->Position.y - Objecti->Position.y));
-                        }
-                    }
-                    if (Objectj->beingScaled == true)
-                    {
-                        Objectj->SetHasGravity(false);
-                        Objectj->Velocity = glm::vec2(0, 0);
-
-                        if (Objectj->ColliderShape.Type == ShapeType::CIRCLE)
-                        {
-                            float distance = glm::distance(MouseHitbox->Position, Objectj->Position);
-                            Objectj->ColliderShape.CircleData.Radius = distance;
-                        }
-                        if (Objectj->ColliderShape.Type == ShapeType::AABB)
-                        {
-                            Objectj->ColliderShape.AABBData.HalfExtents = glm::vec2(
-                                (MouseHitbox->Position.x - Objectj->Position.x),
-                                (MouseHitbox->Position.y - Objectj->Position.y));
-                        }
-                    }
-                }
-            }
 
             ShapeType ColKey = Objecti->ColliderShape.Type | Objectj->ColliderShape.Type;
             ShapeType PairType = Objecti->ColliderShape.Type | Objectj->ColliderShape.Type;
@@ -269,9 +243,10 @@ void World::TickFixed()
                             }
                         }
                     }
+
                     else
                     {
-                        //if both objects are being picked up ignore collision
+                        //if both objects are being picked up somehow, ignore collision
                         if (Objecti->pickedUp && Objectj->pickedUp)
                         {
 

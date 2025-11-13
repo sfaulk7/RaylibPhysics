@@ -1,6 +1,7 @@
 #include "PhysObject.h"
 #include <iostream>
 #include <cstdlib>
+#include <random>
 
 PhysObject::PhysObject() :
 	Position({ 0, 0 }),
@@ -33,8 +34,15 @@ void PhysObject::TickPhys(float Delta)
 
 			//Fast interpolation
 			glm::vec2 step = { Velocity.x / steps, Velocity.y / steps };
-
+			glm::vec2 previousPos = Position;
 			Position = { Position.x + step.x, Position.y + step.y };
+			if(isnan(Position.x) || isnan(Position.y))
+			{
+				Position = previousPos;
+				float newVelocityX = GetRandomValue(-10, 10);
+				float newVelocityY = GetRandomValue(-10, 10);
+				Velocity = glm::vec2(newVelocityX, newVelocityY);
+			}
 		}
 	}
 
@@ -76,13 +84,22 @@ void PhysObject::TickPhys(float Delta)
 			Velocity = Velocity + (Gravity);
 	}
 
+	////Debug checks
 	//system("cls");
 	//std::cout << "Position X: " << Position.x <<
 	//	"\nPosition Y:" << Position.y << std::endl;
 	//if (Velocity.x > 0 || Velocity.y > 0 || Velocity.x < 0 || Velocity.y < 0)
-	//std::cout << "\rVelocity X: " << Velocity.x << " Velocity Y:" << Velocity.y << std::endl;
+	//{
+	//	if (isStatic == false)
+	//	{
+	//		std::cout << "\rVelocity X: " << Velocity.x << " Velocity Y:" << Velocity.y << std::endl;
+	//	}
+	//}
+		
 	//if (Acceleration.x > 0 || Acceleration.y > 0 || Acceleration.x < 0 || Acceleration.y < 0)
 	//	std::cout << "\rAcceleration X: " << Acceleration.x << " Acceleration Y:" << Acceleration.y << std::endl;
+	//std::cout << "Picked Up: " << pickedUp << std::endl;
+	//std::cout << "Being Scaled: " << beingScaled << std::endl;
 }
 
 // For appliying continuous forces
@@ -127,6 +144,13 @@ void PhysObject::ResolvePhysObjects(PhysObject& Lhs, PhysObject& Rhs, float Elas
 
 	// depenetrate objects 
 	glm::vec2 Mtv = Normal * Pen;
+	if (Lhs.Position == Rhs.Position || isnan(Mtv.x) || isnan(Mtv.y))
+	{
+		float newMtvX = GetRandomValue(-10, 10);
+		float newMtvY = GetRandomValue(-10, 10);
+		Mtv = glm::vec2(newMtvX, newMtvY);
+	}
+
 	if (Lhs.isStatic == false)
 	{
 		Lhs.Position -= Mtv;
@@ -135,6 +159,7 @@ void PhysObject::ResolvePhysObjects(PhysObject& Lhs, PhysObject& Rhs, float Elas
 	{
 		Rhs.Position += Mtv;
 	}
+	std::cout << "Mtv X: " << Mtv.x <<"\Mtv Y: " << Mtv.y << std::endl;
 
 	// apply impulses to update velocity after collision
 	// remember: apply an equal but opposite force to the other
