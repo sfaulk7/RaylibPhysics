@@ -7,9 +7,10 @@ All objects will simulate gravity upon spawning except for the platforms
 
 ### Spawning Objects: <br/>
 Pressing Q will spawn a Circle at the mouse <br/>
-Pressing E will spawn a Rectangle at the mouse <br/>
-Pressing R will spawn a non collidable pixel at the mouse <br/>
-Pressing Space will spawn a wide rectangle that will NOT simulate gravity and acts like a platform <br/>
+Pressing W will spawn a Rectangle at the mouse <br/>
+Pressing E will spawn a non collidable pixel at the mouse <br/>
+Pressing R will swap between spawning objects that are collidable <br/>
+Pressing Space will swap between spawning objects that are static <br/>
 ### Interacting with objects: <br/>
 #### Gravity:
 Pressing G will toggle gravity on and off for ALL objects including platforms <br/>
